@@ -9,10 +9,8 @@
 //       /            → redirect to /dashboard
 //       *            → 404
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { LoginPage } from '@/pages/auth/LoginPage';
-import { DashboardPage } from '@/pages/DashboardPage';
 
 // ─── Minimal Utility Pages ────────────────────────────────────────────────────
 const UnauthorizedPage = () => (
@@ -41,13 +39,10 @@ function App() {
       <Routes>
 
         {/* ── Public Routes ─────────────────────────────────────────────── */}
-        <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
         {/* ── Protected Routes (require authentication) ─────────────────── */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
 
           {/*
             Future modules will be added here as Phase-1 integration progresses.
