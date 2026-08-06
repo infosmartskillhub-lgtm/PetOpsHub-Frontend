@@ -33,6 +33,13 @@ const NotFoundPage = () => (
   </div>
 );
 
+const DashboardPage = () => (
+  <div className="flex min-h-screen items-center justify-center bg-slate-900 text-white flex-col gap-4">
+    <h1 className="text-4xl font-bold text-teal-400">PetOpsHub Dashboard</h1>
+    <p className="text-slate-400">Logged in successfully.</p>
+  </div>
+);
+
 function App() {
   return (
     <BrowserRouter>
@@ -43,7 +50,7 @@ function App() {
 
         {/* ── Protected Routes (require authentication) ─────────────────── */}
         <Route element={<ProtectedRoute />}>
-
+          <Route path="/dashboard" element={<DashboardPage />} />
           {/*
             Future modules will be added here as Phase-1 integration progresses.
             Example:
