@@ -9,8 +9,9 @@
 //       /            → redirect to /dashboard
 //       *            → 404
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
 
 // ─── Minimal Utility Pages ────────────────────────────────────────────────────
 const UnauthorizedPage = () => (
@@ -33,13 +34,6 @@ const NotFoundPage = () => (
   </div>
 );
 
-const DashboardPage = () => (
-  <div className="flex min-h-screen items-center justify-center bg-slate-900 text-white flex-col gap-4">
-    <h1 className="text-4xl font-bold text-teal-400">PetOpsHub Dashboard</h1>
-    <p className="text-slate-400">Logged in successfully.</p>
-  </div>
-);
-
 function App() {
   return (
     <BrowserRouter>
@@ -47,6 +41,7 @@ function App() {
 
         {/* ── Public Routes ─────────────────────────────────────────────── */}
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
         {/* ── Protected Routes (require authentication) ─────────────────── */}
         <Route element={<ProtectedRoute />}>
