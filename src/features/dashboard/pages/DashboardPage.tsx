@@ -30,9 +30,6 @@ export const DashboardPage = () => {
     );
   }
 
-  // Fallback defaults in case data is null somehow
-  const kpis = data?.kpis || { total_pets: 0, upcoming_appointments_today: 0 };
-  
   return (
     <div className="min-h-screen bg-slate-900 p-8 text-slate-200">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -47,8 +44,8 @@ export const DashboardPage = () => {
 
         {/* KPI Grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <KpiCard title="My Pets" value={kpis.total_pets} icon={PawPrint} color="text-teal-400" />
-          <KpiCard title="Appointments" value={kpis.upcoming_appointments_today} icon={Calendar} color="text-blue-400" />
+          <KpiCard title="My Pets" value={data?.kpis?.total_pets ?? 0} icon={PawPrint} color="text-teal-400" />
+          <KpiCard title="Appointments" value={data?.kpis?.upcoming_appointments_today ?? 0} icon={Calendar} color="text-blue-400" />
           <KpiCard title="Balance" value="$0.00" icon={DollarSign} color="text-green-400" />
           <KpiCard title="Vaccines Due" value="0" icon={Syringe} color="text-orange-400" />
           <KpiCard title="Active Boarding" value="0" icon={Home} color="text-indigo-400" />
