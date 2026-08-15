@@ -12,10 +12,10 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import { api } from '@/lib/axios';
-import type { UserProfile, MeResponse } from '@/types/auth';
+import type { ClientProfile, PortalMeResponse } from '@/types/auth';
 
 interface AuthStore {
-  user: UserProfile | null;
+  user: ClientProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 
@@ -100,15 +100,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   // including organization_id, branch_id, and role — the multi-tenant context.
   _fetchProfile: async () => {
     try {
-      const response = await api.get<MeResponse>('/auth/me');
+      const response = await api.get<PortalMeResponse>('/portal/me');
       set({
         user: response.data.data,
         isAuthenticated: true,
       });
-    } catch {
+    } catch (error: any) {
       // Backend rejected the token or profile not found — clear state.
       await supabase.auth.signOut();
       set({ user: null, isAuthenticated: false });
+      const msg = error.response?.data?.message || error.message || 'Failed to load client profile from backend.';
+      throw new Error(msg);
     }
   },
 }));

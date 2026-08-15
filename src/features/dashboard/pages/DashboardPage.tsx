@@ -95,9 +95,41 @@ export const DashboardPage = () => {
 
             {/* Outstanding Invoices */}
             <SectionCard title="Outstanding Invoices">
-              <div className="flex h-24 items-center justify-center rounded-lg border border-slate-700/50 bg-slate-800/50 border-dashed">
-                <p className="text-sm text-slate-400">No pending invoices</p>
-              </div>
+              {data?.balance && data.balance > 0 ? (
+                <div className="flex flex-col justify-between rounded-lg border border-orange-800/50 bg-orange-900/20 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-full bg-orange-900/50 p-2 text-orange-400">
+                      <DollarSign className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-orange-400">
+                        Total Due: ${data.balance.toFixed(2)}
+                      </p>
+                      {data.outstandingInvoice && (
+                        <p className="text-sm text-slate-400">
+                          Includes Invoice #{data.outstandingInvoice.invoice_number}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate('/invoices')}
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500/20 py-2 text-sm font-medium text-orange-400 transition-colors hover:bg-orange-500/30"
+                  >
+                    View Invoices
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col h-24 items-center justify-center rounded-lg border border-slate-700/50 bg-slate-800/50 border-dashed">
+                  <p className="text-sm text-slate-400">No pending invoices</p>
+                  <button
+                    onClick={() => navigate('/invoices')}
+                    className="mt-2 text-xs font-medium text-teal-400 hover:underline"
+                  >
+                    View Billing History
+                  </button>
+                </div>
+              )}
             </SectionCard>
 
             {/* Recent Messages */}

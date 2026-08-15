@@ -6,12 +6,15 @@
 //   const { user, isAuthenticated, isLoading, login, logout } = useAuth();
 
 import { useAuthStore } from '@/store/authStore';
+import { useShallow } from 'zustand/react/shallow';
 
 export const useAuth = () =>
-  useAuthStore((state) => ({
-    user: state.user,
-    isAuthenticated: state.isAuthenticated,
-    isLoading: state.isLoading,
-    login: state.login,
-    logout: state.logout,
-  }));
+  useAuthStore(
+    useShallow((state) => ({
+      user: state.user,
+      isAuthenticated: state.isAuthenticated,
+      isLoading: state.isLoading,
+      login: state.login,
+      logout: state.logout,
+    }))
+  );
