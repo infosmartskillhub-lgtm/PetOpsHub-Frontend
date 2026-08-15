@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardService } from '@/services/dashboard.service';
 import { 
@@ -6,6 +7,7 @@ import {
 } from 'lucide-react';
 
 export const DashboardPage = () => {
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboardSummary'],
     queryFn: dashboardService.getSummary,
@@ -44,12 +46,12 @@ export const DashboardPage = () => {
 
         {/* KPI Grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <KpiCard title="My Pets" value={data?.kpis?.total_pets ?? 0} icon={PawPrint} color="text-teal-400" />
-          <KpiCard title="Appointments" value={data?.kpis?.upcoming_appointments_today ?? 0} icon={Calendar} color="text-blue-400" />
-          <KpiCard title="Balance" value="$0.00" icon={DollarSign} color="text-green-400" />
-          <KpiCard title="Vaccines Due" value="0" icon={Syringe} color="text-orange-400" />
-          <KpiCard title="Active Boarding" value="0" icon={Home} color="text-indigo-400" />
-          <KpiCard title="Active Training" value="0" icon={Activity} color="text-pink-400" />
+          <KpiCard title="My Pets" value={data?.petCount ?? 0} icon={PawPrint} color="text-teal-400" />
+          <KpiCard title="Appointments" value={data?.appointmentCount ?? 0} icon={Calendar} color="text-blue-400" />
+          <KpiCard title="Balance" value={`$${(data?.balance ?? 0).toFixed(2)}`} icon={DollarSign} color="text-green-400" />
+          <KpiCard title="Vaccines Due" value={data?.vaccinesDueCount ?? 0} icon={Syringe} color="text-orange-400" />
+          <KpiCard title="Active Boarding" value={data?.activeBoardingCount ?? 0} icon={Home} color="text-indigo-400" />
+          <KpiCard title="Active Training" value={data?.activeTrainingCount ?? 0} icon={Activity} color="text-pink-400" />
         </div>
 
         {/* Main Content Grid */}
@@ -84,7 +86,7 @@ export const DashboardPage = () => {
             {/* Quick Actions */}
             <SectionCard title="Quick Actions">
               <div className="grid grid-cols-2 gap-3">
-                <ActionButton icon={Calendar} label="Book Appt" />
+                <ActionButton icon={Calendar} label="Book Appt" onClick={() => navigate('/appointments')} />
                 <ActionButton icon={MessageSquare} label="Message" />
                 <ActionButton icon={PawPrint} label="Add Pet" />
                 <ActionButton icon={Settings2} label="Settings" />
@@ -140,8 +142,11 @@ const SectionCard = ({ title, children }: { title: string, children: React.React
   </div>
 );
 
-const ActionButton = ({ icon: Icon, label }: any) => (
-  <button className="flex flex-col items-center justify-center gap-2 rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700">
+const ActionButton = ({ icon: Icon, label, onClick }: any) => (
+  <button
+    onClick={onClick}
+    className="flex flex-col items-center justify-center gap-2 rounded-lg bg-slate-700/50 p-4 transition-colors hover:bg-slate-700"
+  >
     <Icon className="h-5 w-5 text-teal-400" />
     <span className="text-xs font-medium text-slate-200">{label}</span>
   </button>

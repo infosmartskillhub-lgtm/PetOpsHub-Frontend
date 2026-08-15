@@ -5,13 +5,18 @@
 //   /login           → LoginPage (public)
 //   /unauthorized    → 403 page (public)
 //   /*               → ProtectedRoute wrapper
-//       /dashboard   → DashboardPage (authenticated)
-//       /            → redirect to /dashboard
-//       *            → 404
+//       /dashboard      → DashboardPage (authenticated)
+//       /pets           → MyPetsPage (authenticated)
+//       /appointments   → AppointmentsPage (authenticated)
+//       /               → redirect to /dashboard
+//       *               → 404
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
+import { MyPetsPage } from '@/features/pets/pages/MyPetsPage';
+import { AppointmentsPage } from '@/features/appointments/pages/AppointmentsPage';
+import { LoginPage } from '@/features/auth/pages/LoginPage';
 
 // ─── Minimal Utility Pages ────────────────────────────────────────────────────
 const UnauthorizedPage = () => (
@@ -40,18 +45,15 @@ function App() {
       <Routes>
 
         {/* ── Public Routes ─────────────────────────────────────────────── */}
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
         {/* ── Protected Routes (require authentication) ─────────────────── */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
-          {/*
-            Future modules will be added here as Phase-1 integration progresses.
-            Example:
-              <Route path="/clients" element={<ClientsPage />} />
-              <Route path="/pets" element={<PetsPage />} />
-          */}
+          <Route path="/pets" element={<MyPetsPage />} />
+          <Route path="/appointments" element={<AppointmentsPage />} />
         </Route>
 
         {/* ── Catch-all 404 ─────────────────────────────────────────────── */}
