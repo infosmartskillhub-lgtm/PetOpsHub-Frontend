@@ -12,7 +12,7 @@
 //   - lucide-react icons, Tailwind utility classes
 
 import { useState, type FormEvent } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { petService } from '@/services/pet.service';
 import type { Pet } from '@/types/pet';
 import {
@@ -100,13 +100,102 @@ const PetCard = ({ pet }: { pet: Pet }) => (
   </div>
 );
 
-// ─── Main page component ──────────────────────────────────────────────────────
+// ─── Create Pet Modal ────────────────────────────────────────────────────────
+interface CreatePetModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const CreatePetModal = ({ isOpen, onClose, onSuccess }: CreatePetModalProps) => {
+  const [formData, setFormData] = useState({ pet_name: '', species: '' });
+  
+  const mutation = useMutation({
+    mutationFn: petService.create,
+    onSuccess: () => {
+      onSuccess();
+      onClose();
+      setFormData({ pet_name: '', species: '' });
+    },
+  });
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-xl bg-slate-800 p-6 shadow-xl ring-1 ring-slate-700">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-white">Add New Pet</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-200">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        
+        {mutation.isError && (
+          <div className="mb-4 rounded-lg bg-red-900/30 p-3 text-sm text-red-400 border border-red-800">
+            Failed to add pet. Please try again.
+          </div>
+        )}
+
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            mutation.mutate(formData as any);
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Pet Name *</label>
+            <input
+              required
+              type="text"
+              value={formData.pet_name}
+              onChange={(e) => setFormData(p => ({ ...p, pet_name: e.target.value }))}
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              placeholder="E.g., Max"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Species *</label>
+            <input
+              required
+              type="text"
+              value={formData.species}
+              onChange={(e) => setFormData(p => ({ ...p, species: e.target.value }))}
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              placeholder="E.g., Dog"
+            />
+          </div>
+          
+          <div className="mt-6 flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={mutation.isPending}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={mutation.isPending || !formData.pet_name || !formData.species}
+              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {mutation.isPending ? 'Adding...' : 'Add Pet'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ─── Main Page Component ──────────────────────────────────────────────────────
 export const MyPetsPage = () => {
-  // Separate "committed" search (in queryKey) from the live input value so we
-  // only hit the backend when the user explicitly submits the search form.
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['pets', search, page],
@@ -185,17 +274,22 @@ export const MyPetsPage = () => {
               View and manage all pets registered to your account.
             </p>
           </div>
-          {/* Add Pet — placeholder only; CRUD not yet implemented */}
+          {/* Add Pet */}
           <button
-            disabled
-            title="Add Pet — coming soon"
-            className="flex cursor-not-allowed items-center gap-2 rounded-lg bg-teal-600/40 px-5 py-2.5 text-sm font-semibold text-teal-300 opacity-60 transition-all"
-            aria-label="Add Pet (coming soon)"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-teal-500"
+            aria-label="Add Pet"
           >
             <Plus className="h-4 w-4" />
             Add Pet
           </button>
         </div>
+
+        <CreatePetModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={() => void refetch()}
+        />
 
         {/* Search bar ─────────────────────────────────────────────────────── */}
         <form onSubmit={handleSearchSubmit} className="flex gap-2">

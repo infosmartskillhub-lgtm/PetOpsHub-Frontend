@@ -1,4 +1,4 @@
-﻿// src/types/pet.ts
+// src/types/pet.ts
 // TypeScript types for the Pet entity and its API request/response shapes.
 //
 // Field source of truth:
@@ -122,13 +122,14 @@ export interface PetDeleteResponse {
 //   Fields NOT accepted on create: id, pet_code, organization_id, created_at,
 //     updated_at, deleted_at (all set server-side)
 
-/** POST /api/v1/pets request body */
 export interface CreatePetPayload {
-  // Required
-  client_id: string;
-  branch_id: string;
+  // Required core fields
   pet_name: string;
   species: string;
+
+  // Optional core fields
+  client_id?: string;
+  branch_id?: string;
 
   // Optional core fields
   breed?: string;
