@@ -11,7 +11,7 @@
 //   - Same loading spinner, same error card pattern
 //   - lucide-react icons, Tailwind utility classes
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { petService } from '@/services/pet.service';
 import type { Pet } from '@/types/pet';
@@ -24,6 +24,7 @@ import {
   ChevronRight,
   AlertCircle,
   X,
+  Pencil,
 } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -75,13 +76,20 @@ const DetailField = ({ label, value }: { label: string; value: string }) => (
 );
 
 // ─── Pet card ─────────────────────────────────────────────────────────────────
-const PetCard = ({ pet }: { pet: Pet }) => (
-  <div className="rounded-xl border border-slate-800 bg-slate-800/80 p-5 shadow-sm transition-all hover:border-slate-700 hover:bg-slate-800">
+const PetCard = ({ pet, onEdit }: { pet: Pet; onEdit: (pet: Pet) => void }) => (
+  <div className="group relative rounded-xl border border-slate-800 bg-slate-800/80 p-5 shadow-sm transition-all hover:border-slate-700 hover:bg-slate-800">
+    <button
+      onClick={() => onEdit(pet)}
+      className="absolute right-4 top-4 hidden rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white group-hover:block transition-colors"
+      aria-label="Edit pet"
+    >
+      <Pencil className="h-4 w-4" />
+    </button>
     {/* Top row: avatar + name/code + status */}
     <div className="flex items-start gap-4">
       <PetAvatar pet={pet} />
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-2 pr-8">
           <div className="min-w-0">
             <h3 className="truncate text-base font-semibold text-white">{pet.pet_name}</h3>
             <p className="mt-0.5 font-mono text-xs text-slate-500">{pet.pet_code}</p>
@@ -109,7 +117,7 @@ interface CreatePetModalProps {
 
 const CreatePetModal = ({ isOpen, onClose, onSuccess }: CreatePetModalProps) => {
   const [formData, setFormData] = useState({ pet_name: '', species: '' });
-  
+
   const mutation = useMutation({
     mutationFn: petService.create,
     onSuccess: () => {
@@ -130,14 +138,14 @@ const CreatePetModal = ({ isOpen, onClose, onSuccess }: CreatePetModalProps) => 
             <X className="h-5 w-5" />
           </button>
         </div>
-        
+
         {mutation.isError && (
           <div className="mb-4 rounded-lg bg-red-900/30 p-3 text-sm text-red-400 border border-red-800">
             Failed to add pet. Please try again.
           </div>
         )}
 
-        <form 
+        <form
           onSubmit={(e) => {
             e.preventDefault();
             mutation.mutate(formData as any);
@@ -166,7 +174,7 @@ const CreatePetModal = ({ isOpen, onClose, onSuccess }: CreatePetModalProps) => 
               placeholder="E.g., Dog"
             />
           </div>
-          
+
           <div className="mt-6 flex justify-end gap-3 pt-2">
             <button
               type="button"
@@ -190,12 +198,200 @@ const CreatePetModal = ({ isOpen, onClose, onSuccess }: CreatePetModalProps) => 
   );
 };
 
+// ─── Edit Pet Modal ───────────────────────────────────────────────────────────
+interface EditPetModalProps {
+  pet: Pet | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const EditPetModal = ({ pet, isOpen, onClose, onSuccess }: EditPetModalProps) => {
+  const [formData, setFormData] = useState<Partial<Pet>>({});
+
+  useEffect(() => {
+    if (pet) {
+      setFormData({
+        pet_name: pet.pet_name,
+        species: pet.species,
+        breed: pet.breed || '',
+        gender: pet.gender || '',
+        color: pet.color || '',
+        weight: pet.weight || 0,
+        weight_unit: pet.weight_unit || 'kg',
+        notes: pet.notes || '',
+        status: pet.status,
+      });
+    }
+  }, [pet]);
+
+  const mutation = useMutation({
+    mutationFn: (updatedPet: Partial<Pet>) => {
+      if (!pet) throw new Error('No pet to update');
+      return petService.update(pet.id, updatedPet);
+    },
+    onSuccess: () => {
+      onSuccess();
+      onClose();
+    },
+  });
+
+  if (!isOpen || !pet) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
+      <div className="w-full max-w-lg rounded-xl bg-slate-800 p-6 shadow-xl ring-1 ring-slate-700 my-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-white">Edit Pet</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-200">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {mutation.isError && (
+          <div className="mb-4 rounded-lg bg-red-900/30 p-3 text-sm text-red-400 border border-red-800">
+            Failed to update pet. Please try again.
+          </div>
+        )}
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            mutation.mutate(formData);
+          }}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Pet Name *</label>
+              <input
+                required
+                type="text"
+                value={formData.pet_name || ''}
+                onChange={(e) => setFormData(p => ({ ...p, pet_name: e.target.value }))}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Species *</label>
+              <input
+                required
+                type="text"
+                value={formData.species || ''}
+                onChange={(e) => setFormData(p => ({ ...p, species: e.target.value }))}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Breed</label>
+              <input
+                type="text"
+                value={formData.breed || ''}
+                onChange={(e) => setFormData(p => ({ ...p, breed: e.target.value }))}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Gender</label>
+              <input
+                type="text"
+                value={formData.gender || ''}
+                onChange={(e) => setFormData(p => ({ ...p, gender: e.target.value }))}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Color</label>
+              <input
+                type="text"
+                value={formData.color || ''}
+                onChange={(e) => setFormData(p => ({ ...p, color: e.target.value }))}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Weight</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.weight || ''}
+                onChange={(e) => setFormData(p => ({ ...p, weight: parseFloat(e.target.value) || undefined }))}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Unit</label>
+              <select
+                value={formData.weight_unit || 'kg'}
+                onChange={(e) => setFormData(p => ({ ...p, weight_unit: e.target.value }))}
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              >
+                <option value="kg">kg</option>
+                <option value="lbs">lbs</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
+            <select
+              value={formData.status || 'Active'}
+              onChange={(e) => setFormData(p => ({ ...p, status: e.target.value as any }))}
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            >
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Deceased">Deceased</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
+            <textarea
+              rows={3}
+              value={formData.notes || ''}
+              onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))}
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            />
+          </div>
+
+          <div className="mt-6 flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={mutation.isPending}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={mutation.isPending || !formData.pet_name || !formData.species}
+              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {mutation.isPending ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main Page Component ──────────────────────────────────────────────────────
 export const MyPetsPage = () => {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingPet, setEditingPet] = useState<Pet | null>(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['pets', search, page],
@@ -291,6 +487,13 @@ export const MyPetsPage = () => {
           onSuccess={() => void refetch()}
         />
 
+        <EditPetModal
+          pet={editingPet}
+          isOpen={!!editingPet}
+          onClose={() => setEditingPet(null)}
+          onSuccess={() => void refetch()}
+        />
+
         {/* Search bar ─────────────────────────────────────────────────────── */}
         <form onSubmit={handleSearchSubmit} className="flex gap-2">
           <div className="relative flex-1">
@@ -367,7 +570,7 @@ export const MyPetsPage = () => {
         {pets.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {pets.map((pet) => (
-              <PetCard key={pet.id} pet={pet} />
+              <PetCard key={pet.id} pet={pet} onEdit={setEditingPet} />
             ))}
           </div>
         )}
