@@ -32,6 +32,8 @@ export const DashboardPage = () => {
     );
   }
 
+  const safeBalance = Number.isFinite(data?.balance) ? Number(data?.balance) : 0;
+
   return (
     <div className="min-h-screen bg-slate-900 p-8 text-slate-200">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -48,7 +50,7 @@ export const DashboardPage = () => {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <KpiCard title="My Pets" value={data?.petCount ?? 0} icon={PawPrint} color="text-teal-400" />
           <KpiCard title="Appointments" value={data?.appointmentCount ?? 0} icon={Calendar} color="text-blue-400" />
-          <KpiCard title="Balance" value={`$${(data?.balance ?? 0).toFixed(2)}`} icon={DollarSign} color="text-green-400" />
+          <KpiCard title="Balance" value={`$${safeBalance.toFixed(2)}`} icon={DollarSign} color="text-green-400" />
           <KpiCard title="Vaccines Due" value={data?.vaccinesDueCount ?? 0} icon={Syringe} color="text-orange-400" />
           <KpiCard title="Active Boarding" value={data?.activeBoardingCount ?? 0} icon={Home} color="text-indigo-400" />
           <KpiCard title="Active Training" value={data?.activeTrainingCount ?? 0} icon={Activity} color="text-pink-400" />
@@ -95,7 +97,7 @@ export const DashboardPage = () => {
 
             {/* Outstanding Invoices */}
             <SectionCard title="Outstanding Invoices">
-              {data?.balance && data.balance > 0 ? (
+              {data && safeBalance > 0 ? (
                 <div className="flex flex-col justify-between rounded-lg border border-orange-800/50 bg-orange-900/20 p-4">
                   <div className="flex items-center gap-3">
                     <div className="rounded-full bg-orange-900/50 p-2 text-orange-400">
@@ -103,9 +105,9 @@ export const DashboardPage = () => {
                     </div>
                     <div>
                       <p className="font-semibold text-orange-400">
-                        Total Due: ${data.balance.toFixed(2)}
+                        Total Due: ${safeBalance.toFixed(2)}
                       </p>
-                      {data.outstandingInvoice && (
+                      {data?.outstandingInvoice && (
                         <p className="text-sm text-slate-400">
                           Includes Invoice #{data.outstandingInvoice.invoice_number}
                         </p>
