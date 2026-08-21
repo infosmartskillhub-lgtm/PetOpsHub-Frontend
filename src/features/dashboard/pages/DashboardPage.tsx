@@ -91,7 +91,7 @@ export const DashboardPage = () => {
                 <ActionButton icon={Calendar} label="Book Appt" onClick={() => navigate('/appointments')} />
                 <ActionButton icon={MessageSquare} label="Message" />
                 <ActionButton icon={PawPrint} label="Add Pet" />
-                <ActionButton icon={Settings2} label="Settings" />
+                <ActionButton icon={Settings2} label="Settings" onClick={() => navigate('/profile')} />
               </div>
             </SectionCard>
 
