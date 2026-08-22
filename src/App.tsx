@@ -18,6 +18,7 @@ import { MyPetsPage } from '@/features/pets/pages/MyPetsPage';
 import { AppointmentsPage } from '@/features/appointments/pages/AppointmentsPage';
 import { InvoicesPage } from '@/features/billing/pages/InvoicesPage';
 import { ProfilePage } from '@/features/profile/pages/ProfilePage';
+import { SettingsPage } from '@/features/settings/pages/SettingsPage';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 
 // ─── Minimal Utility Pages ────────────────────────────────────────────────────
@@ -58,6 +59,7 @@ function App() {
           <Route path="/appointments" element={<AppointmentsPage />} />
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
         {/* ── Catch-all 404 ─────────────────────────────────────────────── */}
