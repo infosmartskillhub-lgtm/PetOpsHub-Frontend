@@ -6,11 +6,14 @@
 //   useMutation (preferences) → profileService.update({preferred_language, preferred_contact_method})
 //                             → PUT /portal/client
 //
+//   useQuery(['notificationPreferences']) → notificationService.getPreferences() → GET /portal/notification-preferences
+//   useMutation (notificationPrefs) → notificationService.updatePreferences(prefs) → PUT /portal/notification-preferences
+//
 // Security:
-//   - Only preferred_language and preferred_contact_method are ever sent in the payload.
+//   - Only preferred_language and preferred_contact_method are ever sent in the profile payload.
 //   - id, email, organization_id, branch_id, auth_user_id, first_name, last_name,
 //     phone, status are intentionally NEVER included in the update payload.
-//   - Notification and Privacy sections are static "coming soon" — no backend calls.
+//   - Notification preferences are rigorously filtered by Zod in the backend.
 //
 // Design conventions match DashboardPage / MyPetsPage / ProfilePage:
 //   bg-slate-900 base · slate-800/80 cards · teal-400/500 accent · lucide-react icons
@@ -18,6 +21,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileService, type UpdateClientProfilePayload } from '@/services/profile.service';
+import { notificationService, type NotificationPreferences } from '@/services/notification.service';
 import {
   MessageSquare,
   Globe,
@@ -86,25 +90,50 @@ const FieldRow = ({
   </div>
 );
 
+const Toggle = ({ checked, onChange, disabled }: { checked: boolean, onChange: () => void, disabled?: boolean }) => (
+  <button
+    type="button"
+    disabled={disabled}
+    onClick={onChange}
+    className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+      checked ? 'bg-teal-500' : 'bg-slate-700'
+    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+  >
+    <span
+      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+        checked ? 'translate-x-5' : 'translate-x-0'
+      }`}
+    />
+  </button>
+);
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export const SettingsPage = () => {
   const queryClient = useQueryClient();
 
   // ── Remote data ──────────────────────────────────────────────────────────
-  const { data: profile, isLoading, isError } = useQuery({
+  const { data: profile, isLoading: isLoadingProfile, isError: isProfileError } = useQuery({
     queryKey: ['clientProfile'],
     queryFn: profileService.get,
   });
 
-  // ── Preferences form state ───────────────────────────────────────────────
+  const { data: notifData, isLoading: isLoadingNotifs, isError: isNotifsError } = useQuery({
+    queryKey: ['notificationPreferences'],
+    queryFn: notificationService.getPreferences,
+  });
+
+  const isLoading = isLoadingProfile || isLoadingNotifs;
+  const isError = isProfileError || isNotifsError;
+
+  // ── Profile form state ───────────────────────────────────────────────
   const [language, setLanguage]         = useState('');
   const [contactMethod, setContactMethod] = useState<ContactMethod | ''>('');
 
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg]     = useState<string | null>(null);
+  const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
+  const [profileErrorMsg, setProfileErrorMsg]     = useState<string | null>(null);
 
-  // Sync from API response
+  // Sync profile from API response
   useEffect(() => {
     if (profile) {
       setLanguage(profile.preferred_language ?? '');
@@ -112,37 +141,70 @@ export const SettingsPage = () => {
     }
   }, [profile]);
 
-  // ── Mutation ─────────────────────────────────────────────────────────────
-  const { mutate: savePreferences, isPending: isSaving } = useMutation({
+  // ── Profile Mutation ─────────────────────────────────────────────────────
+  const { mutate: saveProfile, isPending: isSavingProfile } = useMutation({
     mutationFn: (payload: UpdateClientProfilePayload) => profileService.update(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientProfile'] });
-      setSuccessMsg('Preferences saved successfully.');
-      setErrorMsg(null);
-      setTimeout(() => setSuccessMsg(null), 4000);
+      setProfileSuccessMsg('Communication preferences saved successfully.');
+      setProfileErrorMsg(null);
+      setTimeout(() => setProfileSuccessMsg(null), 4000);
     },
     onError: (err: any) => {
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        'Failed to save preferences. Please try again.';
-      setErrorMsg(msg);
-      setSuccessMsg(null);
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save communication preferences.';
+      setProfileErrorMsg(msg);
+      setProfileSuccessMsg(null);
     },
   });
 
-  // ── Submit ───────────────────────────────────────────────────────────────
-  const handleSubmit = (e: FormEvent) => {
+  const handleProfileSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-
-    // PAYLOAD: only preference fields — NO identity/ownership fields ever included
+    setProfileErrorMsg(null);
     const payload: UpdateClientProfilePayload = {
       preferred_language: language.trim() || null,
       preferred_contact_method: (contactMethod as ContactMethod) || null,
     };
+    saveProfile(payload);
+  };
 
-    savePreferences(payload);
+  // ── Notification form state ──────────────────────────────────────────────
+  const [notifs, setNotifs] = useState<NotificationPreferences>({
+    appointment_reminders: true,
+    invoice_alerts: true,
+    pet_health_updates: true,
+    marketing_updates: false,
+  });
+
+  const [notifSuccessMsg, setNotifSuccessMsg] = useState<string | null>(null);
+  const [notifErrorMsg, setNotifErrorMsg]     = useState<string | null>(null);
+
+  // Sync notifs from API response
+  useEffect(() => {
+    if (notifData) {
+      setNotifs(notifData);
+    }
+  }, [notifData]);
+
+  // ── Notification Mutation ────────────────────────────────────────────────
+  const { mutate: saveNotifs, isPending: isSavingNotifs } = useMutation({
+    mutationFn: (payload: NotificationPreferences) => notificationService.updatePreferences(payload),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['notificationPreferences'], data);
+      setNotifSuccessMsg('Notification preferences saved successfully.');
+      setNotifErrorMsg(null);
+      setTimeout(() => setNotifSuccessMsg(null), 4000);
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save notification preferences.';
+      setNotifErrorMsg(msg);
+      setNotifSuccessMsg(null);
+    },
+  });
+
+  const handleNotifSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setNotifErrorMsg(null);
+    saveNotifs(notifs);
   };
 
   // ─── Loading ─────────────────────────────────────────────────────────────
@@ -177,27 +239,21 @@ export const SettingsPage = () => {
           <p className="mt-1 text-slate-400">Manage your communication preferences and account options.</p>
         </div>
 
-        {/* ── Success banner ───────────────────────────────────────────── */}
-        {successMsg && (
-          <div className="flex items-center gap-3 rounded-lg border border-teal-700/50 bg-teal-900/30 px-4 py-3 text-teal-300">
-            <CheckCircle className="h-5 w-5 shrink-0" />
-            <span className="text-sm">{successMsg}</span>
-          </div>
-        )}
-
-        {/* ── Error banner ─────────────────────────────────────────────── */}
-        {errorMsg && (
-          <div className="flex items-center gap-3 rounded-lg border border-red-700/50 bg-red-900/30 px-4 py-3 text-red-300">
-            <AlertCircle className="h-5 w-5 shrink-0" />
-            <span className="text-sm">{errorMsg}</span>
-          </div>
-        )}
-
         {/* ── Communication Preferences ────────────────────────────────── */}
         <SectionCard title="Communication Preferences" icon={MessageSquare}>
-          <form onSubmit={handleSubmit} className="space-y-6">
-
-            {/* Preferred Language */}
+          {profileSuccessMsg && (
+            <div className="mb-4 flex items-center gap-3 rounded-lg border border-teal-700/50 bg-teal-900/30 px-4 py-3 text-teal-300">
+              <CheckCircle className="h-5 w-5 shrink-0" />
+              <span className="text-sm">{profileSuccessMsg}</span>
+            </div>
+          )}
+          {profileErrorMsg && (
+            <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-700/50 bg-red-900/30 px-4 py-3 text-red-300">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              <span className="text-sm">{profileErrorMsg}</span>
+            </div>
+          )}
+          <form onSubmit={handleProfileSubmit} className="space-y-6">
             <FieldRow
               label="Preferred Language"
               description="Language used for communications and notifications."
@@ -209,13 +265,11 @@ export const SettingsPage = () => {
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
                   placeholder="e.g. English, Spanish, French"
-                  disabled={isSaving}
+                  disabled={isSavingProfile}
                   className="block w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 transition focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
             </FieldRow>
-
-            {/* Preferred Contact Method */}
             <FieldRow
               label="Preferred Contact Method"
               description="How you'd like us to reach you for updates and reminders."
@@ -225,7 +279,7 @@ export const SettingsPage = () => {
                   <button
                     key={method}
                     type="button"
-                    disabled={isSaving}
+                    disabled={isSavingProfile}
                     onClick={() => setContactMethod(method === contactMethod ? '' : method)}
                     className={`rounded-lg border px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       contactMethod === method
@@ -243,15 +297,13 @@ export const SettingsPage = () => {
                 </p>
               )}
             </FieldRow>
-
-            {/* Save */}
             <div className="border-t border-slate-700/50 pt-5">
               <button
                 type="submit"
-                disabled={isSaving}
+                disabled={isSavingProfile}
                 className="flex items-center gap-2 rounded-lg bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSaving ? (
+                {isSavingProfile ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     Saving…
@@ -267,23 +319,59 @@ export const SettingsPage = () => {
           </form>
         </SectionCard>
 
-        {/* ── Notifications — Coming Soon ──────────────────────────────── */}
-        <SectionCard title="Notifications" icon={Bell} locked>
-          <div className="space-y-4">
+        {/* ── Notifications ─────────────────────────────────────────────── */}
+        <SectionCard title="Notifications" icon={Bell}>
+          {notifSuccessMsg && (
+            <div className="mb-4 flex items-center gap-3 rounded-lg border border-teal-700/50 bg-teal-900/30 px-4 py-3 text-teal-300">
+              <CheckCircle className="h-5 w-5 shrink-0" />
+              <span className="text-sm">{notifSuccessMsg}</span>
+            </div>
+          )}
+          {notifErrorMsg && (
+            <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-700/50 bg-red-900/30 px-4 py-3 text-red-300">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              <span className="text-sm">{notifErrorMsg}</span>
+            </div>
+          )}
+          <form onSubmit={handleNotifSubmit} className="space-y-4">
             {[
-              { label: 'Appointment Reminders', description: 'Receive reminders before scheduled appointments.' },
-              { label: 'Invoice Alerts', description: 'Get notified when a new invoice is issued.' },
-              { label: 'Pet Health Updates', description: 'Receive notifications about vaccination due dates.' },
-            ].map(({ label, description }) => (
-              <div key={label} className="flex items-center justify-between">
+              { key: 'appointment_reminders', label: 'Appointment Reminders', description: 'Receive reminders before scheduled appointments.' },
+              { key: 'invoice_alerts', label: 'Invoice Alerts', description: 'Get notified when a new invoice is issued.' },
+              { key: 'pet_health_updates', label: 'Pet Health Updates', description: 'Receive notifications about vaccination due dates.' },
+              { key: 'marketing_updates', label: 'Marketing Updates', description: 'Receive newsletters and promotional offers.' },
+            ].map(({ key, label, description }) => (
+              <div key={key} className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-400">{label}</p>
-                  <p className="text-xs text-slate-600">{description}</p>
+                  <p className="text-sm font-medium text-slate-300">{label}</p>
+                  <p className="text-xs text-slate-500">{description}</p>
                 </div>
-                <div className="h-5 w-10 cursor-not-allowed rounded-full bg-slate-700" />
+                <Toggle
+                  checked={notifs[key as keyof NotificationPreferences]}
+                  onChange={() => setNotifs(prev => ({ ...prev, [key]: !prev[key as keyof NotificationPreferences] }))}
+                  disabled={isSavingNotifs}
+                />
               </div>
             ))}
-          </div>
+            <div className="border-t border-slate-700/50 pt-5 mt-2">
+              <button
+                type="submit"
+                disabled={isSavingNotifs}
+                className="flex items-center gap-2 rounded-lg bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingNotifs ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Save Notifications
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </SectionCard>
 
         {/* ── Privacy & Security — Coming Soon ────────────────────────── */}
