@@ -21,6 +21,39 @@ import { api } from '@/lib/axios';
 // ─── Domain Types ─────────────────────────────────────────────────────────────
 
 /**
+ * Appointment types accepted by POST /portal/appointments.
+ *
+ * These values are the EXACT strings enforced by the backend Zod schema
+ * (appointmentTypeEnum in appointment.schema.ts) and the DB check constraint.
+ * Do NOT change these values without updating the backend enum first.
+ */
+export type AppointmentType =
+  | 'Consultation'
+  | 'Vaccination'
+  | 'Surgery'
+  | 'Grooming'
+  | 'Boarding'
+  | 'Training'
+  | 'Follow-up'
+  | 'Emergency'
+  | 'Wellness'
+  | 'Other';
+
+/** All valid AppointmentType values as a runtime-accessible tuple. */
+export const APPOINTMENT_TYPE_VALUES: readonly AppointmentType[] = [
+  'Consultation',
+  'Vaccination',
+  'Surgery',
+  'Grooming',
+  'Boarding',
+  'Training',
+  'Follow-up',
+  'Emergency',
+  'Wellness',
+  'Other',
+] as const;
+
+/**
  * Represents a single appointment entity as returned by the portal API.
  * Fields mirror the backend Appointment model visible to portal clients.
  */
@@ -46,11 +79,14 @@ export interface Appointment {
  * here. Server-side fields (client_id, organization_id, branch_id,
  * appointment_status, appointment_source, appointment_code, created_by,
  * internal_notes, reminder_sent) are intentionally excluded.
+ *
+ * appointment_type is typed as AppointmentType (literal union) so TypeScript
+ * rejects any value that is not in the backend enum at compile time.
  */
 export interface CreateAppointmentPayload {
   pet_id: string;
   service_module: string;
-  appointment_type: string;
+  appointment_type: AppointmentType;
   appointment_date: string;    // ISO 8601 date string, e.g. "2026-08-20"
   start_time: string;          // HH:mm, e.g. "09:00"
   end_time: string;            // HH:mm, e.g. "10:00"

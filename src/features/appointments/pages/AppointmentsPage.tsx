@@ -15,7 +15,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { appointmentService, type Appointment, type CreateAppointmentPayload } from '@/services/appointment.service';
+import { appointmentService, type Appointment, type CreateAppointmentPayload, type AppointmentType, APPOINTMENT_TYPE_VALUES } from '@/services/appointment.service';
 import { petService } from '@/services/pet.service';
 import type { Pet } from '@/types/pet';
 import {
@@ -154,12 +154,29 @@ interface FormErrors {
   estimated_duration_minutes?: string;
 }
 
-const validateForm = (form: CreateAppointmentPayload): FormErrors => {
+/**
+ * Local form state type.
+ * appointment_type is '' when no option has been selected yet.
+ * Once submitted it must be a valid AppointmentType — enforced by validateForm.
+ */
+type FormState = Omit<CreateAppointmentPayload, 'appointment_type'> & {
+  appointment_type: AppointmentType | '';
+};
+
+const validateForm = (form: FormState): FormErrors => {
   const errors: FormErrors = {};
 
   if (!form.pet_id) errors.pet_id = 'Please select a pet.';
   if (!form.service_module.trim()) errors.service_module = 'Service module is required.';
-  if (!form.appointment_type.trim()) errors.appointment_type = 'Appointment type is required.';
+
+  // Guard 1: field must not be empty.
+  if (!form.appointment_type) {
+    errors.appointment_type = 'Appointment type is required.';
+  } else if (!(APPOINTMENT_TYPE_VALUES as readonly string[]).includes(form.appointment_type)) {
+    // Guard 2: runtime enum membership — value must be one of the backend-accepted types.
+    errors.appointment_type = 'Invalid appointment type selected. Please choose a valid option.';
+  }
+
   if (!form.appointment_date) errors.appointment_date = 'Appointment date is required.';
   if (!form.start_time) errors.start_time = 'Start time is required.';
   if (!form.end_time) errors.end_time = 'End time is required.';
@@ -179,7 +196,7 @@ const validateForm = (form: CreateAppointmentPayload): FormErrors => {
   return errors;
 };
 
-const INITIAL_FORM: CreateAppointmentPayload = {
+const INITIAL_FORM: FormState = {
   pet_id: '',
   service_module: '',
   appointment_type: '',
@@ -190,9 +207,26 @@ const INITIAL_FORM: CreateAppointmentPayload = {
   reason_for_visit: '',
 };
 
+
 // ─── Service module / appointment type options ────────────────────────────────
-// These match common PetOpsHub service modules. They are display labels only —
-// the backend validates the actual values.
+//
+// SERVICE_MODULES: free-text strings sent as `service_module` in the payload.
+// The backend accepts any non-empty string for service_module, so these values
+// are display-only and can evolve without a backend change.
+//
+// APPOINTMENT_TYPES: each entry has a human-readable `label` (shown in the UI)
+// and a backend-compatible `value` (sent in the POST payload).
+// IMPORTANT: every `value` MUST be an exact member of AppointmentType, which
+// mirrors the backend Zod `appointmentTypeEnum`. Do NOT add new values here
+// without first adding them to the backend enum.
+//
+// Mapping rationale:
+//   Veterinary  → Consultation, Vaccination, Surgery, Emergency, Follow-up, Wellness
+//   Grooming    → Grooming  (single canonical backend value for all grooming sub-types)
+//   Boarding    → Boarding  (single canonical backend value for all boarding sub-types)
+//   Training    → Training, Consultation (behaviour consult maps to Consultation)
+//   Daycare     → Other     (no dedicated Daycare value in backend enum)
+//   Wellness    → Wellness, Consultation
 const SERVICE_MODULES = [
   'Veterinary',
   'Grooming',
@@ -200,16 +234,52 @@ const SERVICE_MODULES = [
   'Training',
   'Daycare',
   'Wellness',
-];
+] as const;
 
-const APPOINTMENT_TYPES: Record<string, string[]> = {
-  Veterinary: ['General Checkup', 'Vaccination', 'Surgery', 'Dental', 'Emergency', 'Follow Up'],
-  Grooming:   ['Full Groom', 'Bath Only', 'Nail Trim', 'Ear Cleaning'],
-  Boarding:   ['Drop Off', 'Pick Up', 'Extended Stay Check'],
-  Training:   ['Initial Assessment', 'Group Session', 'Private Session', 'Behavior Consult'],
-  Daycare:    ['Full Day', 'Half Day', 'Trial Day'],
-  Wellness:   ['Wellness Exam', 'Senior Screening', 'Nutrition Consult'],
+/** Shape of each option in the appointment-type dropdown. */
+interface AppointmentTypeOption {
+  /** Human-readable label shown in the select element. */
+  label: string;
+  /** Exact value submitted to the backend — must be a valid AppointmentType. */
+  value: AppointmentType;
+}
+
+const APPOINTMENT_TYPES: Record<string, AppointmentTypeOption[]> = {
+  Veterinary: [
+    { label: 'Consultation / General Checkup', value: 'Consultation' },
+    { label: 'Vaccination',                    value: 'Vaccination'  },
+    { label: 'Surgery',                        value: 'Surgery'      },
+    { label: 'Emergency Visit',                value: 'Emergency'    },
+    { label: 'Follow-up',                      value: 'Follow-up'    },
+    { label: 'Wellness Exam',                  value: 'Wellness'     },
+  ],
+  Grooming: [
+    { label: 'Grooming (Full / Bath / Nail / Ear)', value: 'Grooming' },
+    { label: 'Other Grooming Service',              value: 'Other'    },
+  ],
+  Boarding: [
+    { label: 'Boarding Stay',       value: 'Boarding' },
+    { label: 'Other Boarding Stay', value: 'Other'    },
+  ],
+  Training: [
+    { label: 'Training Session',            value: 'Training'     },
+    { label: 'Behaviour Consultation',      value: 'Consultation' },
+    { label: 'Other Training Service',      value: 'Other'        },
+  ],
+  // Daycare has no direct match in the backend enum. We map all Daycare
+  // appointments to 'Other', which is always valid.
+  Daycare: [
+    { label: 'Full Day Daycare',  value: 'Other' },
+    { label: 'Half Day Daycare',  value: 'Other' },
+    { label: 'Trial Day Daycare', value: 'Other' },
+  ],
+  Wellness: [
+    { label: 'Wellness Exam',        value: 'Wellness'     },
+    { label: 'Wellness Consult',     value: 'Consultation' },
+    { label: 'Other Wellness Visit', value: 'Other'        },
+  ],
 };
+
 
 // ─── Main page component ──────────────────────────────────────────────────────
 export const AppointmentsPage = () => {
@@ -217,7 +287,7 @@ export const AppointmentsPage = () => {
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<CreateAppointmentPayload>({ ...INITIAL_FORM });
+  const [form, setForm] = useState<FormState>({ ...INITIAL_FORM });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -304,10 +374,13 @@ export const AppointmentsPage = () => {
     }
 
     // Build clean payload — omit empty optional fields.
+    // appointment_type is guaranteed to be a valid AppointmentType here
+    // because validateForm() above would have returned errors and returned early
+    // if it were empty or not in the APPOINTMENT_TYPE_VALUES set.
     const payload: CreateAppointmentPayload = {
       pet_id: form.pet_id,
       service_module: form.service_module,
-      appointment_type: form.appointment_type,
+      appointment_type: form.appointment_type as AppointmentType,
       appointment_date: form.appointment_date,
       start_time: form.start_time,
       end_time: form.end_time,
@@ -494,8 +567,12 @@ export const AppointmentsPage = () => {
                     <option value="">
                       {form.service_module ? 'Select a type…' : 'Select service first'}
                     </option>
-                    {appointmentTypes.map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                    {appointmentTypes.map((opt) => (
+                      // key uses both value and label because the same backend value
+                      // can appear under multiple display labels (e.g. Daycare → 'Other').
+                      <option key={`${opt.value}-${opt.label}`} value={opt.value}>
+                        {opt.label}
+                      </option>
                     ))}
                   </select>
                 </FormField>
