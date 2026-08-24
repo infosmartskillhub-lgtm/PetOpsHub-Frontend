@@ -19,6 +19,7 @@ import { AppointmentsPage } from '@/features/appointments/pages/AppointmentsPage
 import { InvoicesPage } from '@/features/billing/pages/InvoicesPage';
 import { ProfilePage } from '@/features/profile/pages/ProfilePage';
 import { SettingsPage } from '@/features/settings/pages/SettingsPage';
+import { MedicalRecordsPage } from '@/features/medical-records/pages/MedicalRecordsPage';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 
 // ─── Minimal Utility Pages ────────────────────────────────────────────────────
@@ -60,6 +61,7 @@ function App() {
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/medical-records" element={<MedicalRecordsPage />} />
         </Route>
 
         {/* ── Catch-all 404 ─────────────────────────────────────────────── */}

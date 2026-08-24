@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { dashboardService } from '@/services/dashboard.service';
 import { 
   PawPrint, Calendar, DollarSign, Activity, Settings2, 
-  Syringe, Home, MessageSquare
+  Syringe, Home, MessageSquare, FileText
 } from 'lucide-react';
 
 export const DashboardPage = () => {
@@ -87,8 +87,9 @@ export const DashboardPage = () => {
           <div className="space-y-6">
             {/* Quick Actions */}
             <SectionCard title="Quick Actions">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <ActionButton icon={Calendar} label="Book Appt" onClick={() => navigate('/appointments')} />
+                <ActionButton icon={FileText} label="Records" onClick={() => navigate('/medical-records')} />
                 <ActionButton icon={MessageSquare} label="Message" />
                 <ActionButton icon={PawPrint} label="Add Pet" />
                 <ActionButton icon={Settings2} label="Settings" onClick={() => navigate('/settings')} />
