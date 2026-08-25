@@ -32,3 +32,25 @@ export const getClientPetVaccinations = async (petId: string): Promise<Vaccinati
   const response = await api.get(`/portal/pets/${petId}/vaccinations`);
   return response.data.data;
 };
+
+export interface PetDocument {
+  id: string;
+  pet_id: string;
+  document_type: string;
+  document_title: string;
+  document_number?: string;
+  file_name: string;
+  mime_type?: string;
+  file_size?: number;
+  issue_date?: string;
+  expiry_date?: string;
+  description?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getClientPetDocuments = async (petId: string): Promise<PetDocument[]> => {
+  const response = await api.get(`/portal/pets/${petId}/documents`);
+  return response.data.data;
+};

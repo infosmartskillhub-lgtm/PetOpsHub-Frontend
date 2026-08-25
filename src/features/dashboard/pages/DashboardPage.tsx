@@ -90,8 +90,8 @@ export const DashboardPage = () => {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <ActionButton icon={Calendar} label="Book Appt" onClick={() => navigate('/appointments')} />
                 <ActionButton icon={FileText} label="Records" onClick={() => navigate('/medical-records')} />
+                <ActionButton icon={FileText} label="Documents" onClick={() => navigate('/documents')} />
                 <ActionButton icon={MessageSquare} label="Message" />
-                <ActionButton icon={PawPrint} label="Add Pet" />
                 <ActionButton icon={Settings2} label="Settings" onClick={() => navigate('/settings')} />
               </div>
             </SectionCard>
