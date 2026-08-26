@@ -22,6 +22,7 @@ import { ProfilePage } from '@/features/profile/pages/ProfilePage';
 import { SettingsPage } from '@/features/settings/pages/SettingsPage';
 import { MedicalRecordsPage } from '@/features/medical-records/pages/MedicalRecordsPage';
 import { DocumentsPage } from '@/features/documents/pages/DocumentsPage';
+import { VaccinationsPage } from '@/features/vaccinations/pages/VaccinationsPage';
 import { MessagesPage } from '@/features/messages/pages/MessagesPage';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 
@@ -66,6 +67,7 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/medical-records" element={<MedicalRecordsPage />} />
+            <Route path="/vaccinations" element={<VaccinationsPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/messages" element={<MessagesPage />} />
           </Route>

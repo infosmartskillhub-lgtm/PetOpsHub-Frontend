@@ -11,7 +11,8 @@ import {
   LogOut,
   Menu,
   X,
-  User
+  User,
+  Syringe
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -20,6 +21,7 @@ const navItems = [
   { path: '/pets', label: 'My Pets', icon: PawPrint },
   { path: '/appointments', label: 'Appointments', icon: Calendar },
   { path: '/medical-records', label: 'Medical Records', icon: FileText },
+  { path: '/vaccinations', label: 'Vaccinations', icon: Syringe },
   { path: '/documents', label: 'Documents', icon: FileText },
   { path: '/messages', label: 'Messages', icon: MessageSquare },
   { path: '/invoices', label: 'Invoices', icon: DollarSign },
