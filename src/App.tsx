@@ -13,6 +13,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
 import { MyPetsPage } from '@/features/pets/pages/MyPetsPage';
 import { AppointmentsPage } from '@/features/appointments/pages/AppointmentsPage';
@@ -57,15 +58,17 @@ function App() {
 
         {/* ── Protected Routes (require authentication) ─────────────────── */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/pets" element={<MyPetsPage />} />
-          <Route path="/appointments" element={<AppointmentsPage />} />
-          <Route path="/invoices" element={<InvoicesPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/medical-records" element={<MedicalRecordsPage />} />
-          <Route path="/documents" element={<DocumentsPage />} />
-          <Route path="/messages" element={<MessagesPage />} />
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/pets" element={<MyPetsPage />} />
+            <Route path="/appointments" element={<AppointmentsPage />} />
+            <Route path="/invoices" element={<InvoicesPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/medical-records" element={<MedicalRecordsPage />} />
+            <Route path="/documents" element={<DocumentsPage />} />
+            <Route path="/messages" element={<MessagesPage />} />
+          </Route>
         </Route>
 
         {/* ── Catch-all 404 ─────────────────────────────────────────────── */}
