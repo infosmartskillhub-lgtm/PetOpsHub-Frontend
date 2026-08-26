@@ -91,7 +91,7 @@ export const DashboardPage = () => {
                 <ActionButton icon={Calendar} label="Book Appt" onClick={() => navigate('/appointments')} />
                 <ActionButton icon={FileText} label="Records" onClick={() => navigate('/medical-records')} />
                 <ActionButton icon={FileText} label="Documents" onClick={() => navigate('/documents')} />
-                <ActionButton icon={MessageSquare} label="Message" />
+                <ActionButton icon={MessageSquare} label="Messages" onClick={() => navigate('/messages')} />
                 <ActionButton icon={Settings2} label="Settings" onClick={() => navigate('/settings')} />
               </div>
             </SectionCard>
@@ -137,8 +137,14 @@ export const DashboardPage = () => {
 
             {/* Recent Messages */}
             <SectionCard title="Recent Messages">
-              <div className="flex h-24 items-center justify-center rounded-lg border border-slate-700/50 bg-slate-800/50 border-dashed">
-                <p className="text-sm text-slate-400">No recent messages</p>
+              <div className="flex flex-col h-24 items-center justify-center rounded-lg border border-slate-700/50 bg-slate-800/50 border-dashed">
+                <p className="text-sm text-slate-400">View your conversations</p>
+                <button
+                  onClick={() => navigate('/messages')}
+                  className="mt-2 text-xs font-medium text-teal-400 hover:underline"
+                >
+                  Open Messages
+                </button>
               </div>
             </SectionCard>
 

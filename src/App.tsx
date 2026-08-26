@@ -21,6 +21,7 @@ import { ProfilePage } from '@/features/profile/pages/ProfilePage';
 import { SettingsPage } from '@/features/settings/pages/SettingsPage';
 import { MedicalRecordsPage } from '@/features/medical-records/pages/MedicalRecordsPage';
 import { DocumentsPage } from '@/features/documents/pages/DocumentsPage';
+import { MessagesPage } from '@/features/messages/pages/MessagesPage';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 
 // ─── Minimal Utility Pages ────────────────────────────────────────────────────
@@ -64,6 +65,7 @@ function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/medical-records" element={<MedicalRecordsPage />} />
           <Route path="/documents" element={<DocumentsPage />} />
+          <Route path="/messages" element={<MessagesPage />} />
         </Route>
 
         {/* ── Catch-all 404 ─────────────────────────────────────────────── */}
